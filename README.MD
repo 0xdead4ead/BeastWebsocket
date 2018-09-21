@@ -18,6 +18,8 @@ Easy WebSocket server and client library implemented using C++14 and Boost.Beast
 
 # USAGE
 
+More examples is [`here...`](https://github.com/0xdead4ead/beast_ws_server/tree/master/examples)
+
 Create HTTP server and WS instance:
 
 ```cpp
@@ -106,4 +108,4 @@ Define handlers, connect to remote host:
 
 ```
 
-Copyright © 2018 0xdead4ead
+Copyright © 2018 0xdead4ead, License [`BSD 2-Clause`](https://github.com/0xdead4ead/beast_ws_server/blob/master/LICENSE)
