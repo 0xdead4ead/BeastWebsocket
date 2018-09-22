@@ -99,6 +99,10 @@ public:
         }
     }
 
+    auto & output(){
+        return output_buffer_;
+    }
+
     auto & getConnection() const
     {
         return connection_p_;
@@ -448,6 +452,10 @@ public:
                                                &session<false, Body>::on_handshake,
                                                this->shared_from_this(),
                                                std::placeholders::_1));
+    }
+
+    auto & output(){
+        return output_buffer_;
     }
 
     auto & getConnection() const
