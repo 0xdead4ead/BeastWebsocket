@@ -146,7 +146,7 @@ public:
                                       std::placeholders::_1));
     }
 
-    void do_close(boost::beast::websocket::reason_string const & reason){
+    void do_close(boost::beast::websocket::close_reason const & reason){
 
         if(!accepted)
             return;
@@ -154,20 +154,6 @@ public:
         timer_p_->stream().expires_after(std::chrono::seconds(10));
 
         connection_p_->async_close(reason,
-                                   std::bind(
-                                       &session<true, Body>::on_close,
-                                       this->shared_from_this(),
-                                       std::placeholders::_1));
-    }
-
-    void do_close(boost::beast::websocket::close_code const & code){
-
-        if(!accepted)
-            return;
-
-        timer_p_->stream().expires_after(std::chrono::seconds(10));
-
-        connection_p_->async_close(code,
                                    std::bind(
                                        &session<true, Body>::on_close,
                                        this->shared_from_this(),
@@ -507,24 +493,12 @@ public:
                                       std::placeholders::_1));
     }
 
-    void do_close(boost::beast::websocket::reason_string const & reason){
+    void do_close(boost::beast::websocket::close_reason const & reason){
 
         if(!handshaked)
             return;
 
         connection_p_->async_close(reason,
-                                   std::bind(
-                                       &session<false, Body>::on_close,
-                                       this->shared_from_this(),
-                                       std::placeholders::_1));
-    }
-
-    void do_close(boost::beast::websocket::close_code const & code){
-
-        if(!handshaked)
-            return;
-
-        connection_p_->async_close(code,
                                    std::bind(
                                        &session<false, Body>::on_close,
                                        this->shared_from_this(),

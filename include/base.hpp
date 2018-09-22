@@ -4,7 +4,6 @@
 #include <beast_http_server/include/base.hpp>
 
 #include <boost/beast/websocket.hpp>
-#include <boost/asio/connect.hpp>
 
 
 #if BEAST_HTTP_SERVER_VERSION < 102
@@ -97,17 +96,117 @@ public:
     }
 
     template<class F>
-    void async_close(boost::beast::websocket::reason_string const & reason, F&& f){
+    void async_close(boost::beast::websocket::close_reason const & reason, F&& f){
         derived().stream().async_close(reason,
                                        boost::asio::bind_executor(
                                            strand_, std::forward<F>(f)));
     }
 
-    template<class F>
-    void async_close(boost::beast::websocket::close_code const & code, F&& f){
-        derived().stream().async_close(code,
-                                       boost::asio::bind_executor(
-                                           strand_, std::forward<F>(f)));
+    template<class R>
+    auto accept(const R& r){
+        boost::beast::error_code ec;
+
+        derived().stream().accept(r, ec);
+
+        if(ec)
+            http::base::fail(ec, "accept");
+
+        return ec;
+    }
+
+    template<class R, class D>
+    auto accept_ex(const R& r, const D& d){
+        boost::beast::error_code ec;
+
+        derived().stream().accept_ex(r, d, ec);
+
+        if(ec)
+            http::base::fail(ec, "accept");
+
+        return ec;
+    }
+
+    auto handshake(boost::beast::string_view host,
+                   boost::beast::string_view target){
+        boost::beast::error_code ec;
+
+        derived().stream().handshake(host, target, ec);
+
+        if(ec)
+            http::base::fail(ec, "handshake");
+
+        return ec;
+    }
+
+    template<class D>
+    auto handshake_ex(boost::beast::string_view host,
+                      boost::beast::string_view target,
+                      const D& d){
+        boost::beast::error_code ec;
+
+        derived().stream().handshake_ex(host, target, d, ec);
+
+        if(ec)
+            http::base::fail(ec, "handshake");
+
+        return ec;
+    }
+
+    template<class B>
+    auto write(const B& buf){
+        boost::beast::error_code ec;
+
+        derived().stream().write(buf.data(), ec);
+
+        if(ec)
+            http::base::fail(ec, "write");
+
+        return ec;
+    }
+
+    template<class B>
+    auto read(B& buf){
+        boost::beast::error_code ec;
+
+        derived().stream().read(buf, ec);
+
+        if(ec)
+            http::base::fail(ec, "read");
+
+        return ec;
+    }
+
+    auto ping(boost::beast::websocket::ping_data const & payload){
+        boost::beast::error_code ec;
+
+        derived().stream().ping(payload, ec);
+
+        if(ec)
+            http::base::fail(ec, "ping");
+
+        return ec;
+    }
+
+    auto pong(boost::beast::websocket::ping_data const & payload){
+        boost::beast::error_code ec;
+
+        derived().stream().pong(payload, ec);
+
+        if(ec)
+            http::base::fail(ec, "pong");
+
+        return ec;
+    }
+
+    auto close(boost::beast::websocket::close_reason const & reason){
+        boost::beast::error_code ec;
+
+        derived().stream().close(reason);
+
+        if(ec)
+            http::base::fail(ec, "close");
+
+        return ec;
     }
 
     template<class F>
@@ -152,6 +251,39 @@ public:
 }; // plain_connection class
 
 } // namespace base
+
+template<class Body>
+auto accept(const base::connection::ptr & connection_p, const boost::beast::http::request<Body> & msg){
+    return connection_p->accept(msg);
+}
+
+template<class Body, class ResponseDecorator>
+auto accept_ex(const base::connection::ptr & connection_p,
+               const boost::beast::http::request<Body> & msg, const ResponseDecorator & decorator){
+    return connection_p->accept_ex(msg, decorator);
+}
+
+auto handshake(const base::connection::ptr & connection_p,
+               boost::beast::string_view host, boost::beast::string_view target){
+    return connection_p->handshake(host, target);
+}
+
+template<class RequestDecorator>
+auto handshake_ex(const base::connection::ptr & connection_p,
+                  boost::beast::string_view host,
+                  boost::beast::string_view target, const RequestDecorator & decorator){
+    return connection_p->handshake(host, target, decorator);
+}
+
+template<class StreamBuffer>
+auto send(const base::connection::ptr & connection_p, const StreamBuffer& buffer){
+    return connection_p->write(buffer);
+}
+
+template<class StreamBuffer>
+auto recv(const base::connection::ptr & connection_p, StreamBuffer& buffer){
+    return connection_p->read(buffer);
+}
 
 } // namespace ws
 
