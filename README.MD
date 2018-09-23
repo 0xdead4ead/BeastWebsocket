@@ -37,7 +37,7 @@ Define handlers to accept connection and received message:
         // if it this pull server, an output buffer must be blank
     };
 
-    echo.on_message = [](auto & session, auto & input, auto & output){
+    echo.on_message = [](auto &, auto & input, auto & output){
         cout << boost::beast::buffers(input.data()) << endl;
         boost::beast::ostream(output) << boost::beast::buffers(input.data()); // echo
     };
@@ -88,14 +88,15 @@ Define handlers, connect to remote host:
     };
 
     echo.on_handshake = [](auto &, auto & output, auto &){
-        boost::beast::ostream(output) << "hello!";
+        cout << "Send: ";
+        boost::beast::ostream(output) << read_string(cin, '\n');
     };
 
-    echo.on_message = [](auto & session, auto & input, auto &, auto &){
-        cout << boost::beast::buffers(input.data()) << endl;
-        // The answer is received, closing stream and stop procs!
-        session.do_close(boost::beast::websocket::close_code::normal);
-        http::base::processor::get().stop();
+    echo.on_message = [](auto &, auto & input, auto & output, auto &){
+        cout << "Recv: " << boost::beast::buffers(input.data()) << endl;
+
+        cout << "Send: ";
+        boost::beast::ostream(output) << read_string(cin, '\n');
     };
 
     if(!echo.invoke("127.0.0.1", 80, [](auto & error){
@@ -108,4 +109,8 @@ Define handlers, connect to remote host:
 
 ```
 
-Copyright © 2018 0xdead4ead, License [`BSD 2-Clause`](https://github.com/0xdead4ead/beast_ws_server/blob/master/LICENSE)
+# LICENSE
+
+Copyright © 2018 0xdead4ead
+
+[BSD 2-Clause "Simplified" License](https://github.com/0xdead4ead/beast_ws_server/blob/master/LICENSE)
