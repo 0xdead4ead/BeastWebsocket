@@ -16,9 +16,9 @@ public:
 
     std::function<void(session<true, ReqBody>&, boost::beast::multi_buffer&)> on_accept;
     std::function<void(session<true, ReqBody>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&)> on_message;
-    std::function<void(const boost::beast::string_view&)> on_ping;
-    std::function<void(const boost::beast::string_view&)> on_pong;
-    std::function<void(const boost::beast::string_view&)> on_close;
+    std::function<void(session<true, ReqBody>&, const boost::beast::string_view&)> on_ping;
+    std::function<void(session<true, ReqBody>&, const boost::beast::string_view&)> on_pong;
+    std::function<void(session<true, ReqBody>&, const boost::beast::string_view&)> on_close;
 
     explicit server_impl()
     {}
