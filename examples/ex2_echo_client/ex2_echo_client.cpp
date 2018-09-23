@@ -4,6 +4,13 @@
 
 using namespace std;
 
+template<typename _CharT, typename _Traits>
+auto read_string(basic_istream<_CharT, _Traits>& is, _CharT delim){
+    string str;
+
+    std::getline(is, str, delim);
+    return str;
+}
 
 int main()
 {
@@ -14,13 +21,15 @@ int main()
     };
 
     echo.on_handshake = [](auto &, auto & output, auto &){
-        boost::beast::ostream(output) << "hello!";
+        cout << "Send message: ";
+        boost::beast::ostream(output) << read_string(cin, '\n');
     };
 
-    echo.on_message = [](auto & session, auto & input, auto &, auto &){
-        cout << boost::beast::buffers(input.data()) << endl;
-        session.do_close(boost::beast::websocket::close_code::normal);
-        http::base::processor::get().stop();
+    echo.on_message = [](auto &, auto & input, auto & output, auto &){
+        cout << "Recv message: " << boost::beast::buffers(input.data()) << endl;
+
+        cout << "Send message: ";
+        boost::beast::ostream(output) << read_string(cin, '\n');
     };
 
     if(!echo.invoke("127.0.0.1", 80, [](auto & error){
