@@ -26,46 +26,43 @@ class connection_base : private boost::noncopyable {
 protected:
 
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+    /*boost::beast::string_view*/ std::string host_; // for handshake operation
 
 public:
 
-    explicit connection_base(boost::asio::io_context::executor_type executor)
-        : strand_{executor}
+    explicit connection_base(boost::asio::io_context::executor_type executor, const boost::beast::string_view & host)
+        : strand_{executor}, host_{host}
     {}
 
     template<class F>
-    void async_handshake(boost::beast::string_view host,
-                         boost::beast::string_view target,
+    void async_handshake(boost::beast::string_view target,
                          F&& f){
-        derived().stream().async_handshake(host, target,
+        derived().stream().async_handshake(host_, target,
                                            std::forward<F>(f));
     }
 
     template<class F>
     void async_handshake(boost::beast::websocket::response_type& res,
-                         boost::beast::string_view host,
                          boost::beast::string_view target,
                          F&& f){
-        derived().stream().async_handshake(res, host, target,
+        derived().stream().async_handshake(res, host_, target,
                                            std::forward<F>(f));
     }
 
     template<class F, class D>
-    void async_handshake_ex(boost::beast::string_view host,
-                            boost::beast::string_view target,
+    void async_handshake_ex(boost::beast::string_view target,
                             const D& d,
                             F&& f){
-        derived().stream().async_handshake_ex(host, target,
+        derived().stream().async_handshake_ex(host_, target,
                                               d, std::forward<F>(f));
     }
 
     template<class F, class D>
     void async_handshake_ex(boost::beast::websocket::response_type& res,
-                            boost::beast::string_view host,
                             boost::beast::string_view target,
                             const D& d,
                             F&& f){
-        derived().stream().async_handshake_ex(res, host, target,
+        derived().stream().async_handshake_ex(res, host_, target,
                                               d, std::forward<F>(f));
     }
 
@@ -145,11 +142,10 @@ public:
         return ec;
     }
 
-    auto handshake(boost::beast::string_view host,
-                   boost::beast::string_view target){
+    auto handshake(boost::beast::string_view target){
         boost::beast::error_code ec;
 
-        derived().stream().handshake(host, target, ec);
+        derived().stream().handshake(host_, target, ec);
 
         if(ec)
             http::base::fail(ec, "handshake");
@@ -158,11 +154,10 @@ public:
     }
 
     auto handshake(boost::beast::websocket::response_type& res,
-                   boost::beast::string_view host,
                    boost::beast::string_view target){
         boost::beast::error_code ec;
 
-        derived().stream().handshake(res, host, target, ec);
+        derived().stream().handshake(res, host_, target, ec);
 
         if(ec)
             http::base::fail(ec, "handshake");
@@ -171,12 +166,11 @@ public:
     }
 
     template<class D>
-    auto handshake_ex(boost::beast::string_view host,
-                      boost::beast::string_view target,
+    auto handshake_ex(boost::beast::string_view target,
                       const D& d){
         boost::beast::error_code ec;
 
-        derived().stream().handshake_ex(host, target, d, ec);
+        derived().stream().handshake_ex(host_, target, d, ec);
 
         if(ec)
             http::base::fail(ec, "handshake");
@@ -186,12 +180,11 @@ public:
 
     template<class D>
     auto handshake_ex(boost::beast::websocket::response_type& res,
-                      boost::beast::string_view host,
                       boost::beast::string_view target,
                       const D& d){
         boost::beast::error_code ec;
 
-        derived().stream().handshake_ex(res, host, target, d, ec);
+        derived().stream().handshake_ex(res, host_, target, d, ec);
 
         if(ec)
             http::base::fail(ec, "handshake");
@@ -276,7 +269,7 @@ public:
 
     // Constructor for server to client connection
     explicit connection(boost::asio::ip::tcp::socket&& socket)
-        : base_t{socket.get_executor()},
+        : base_t{socket.get_executor(), {}},
           ws_{std::move(socket)}
     {}
 
@@ -285,10 +278,23 @@ public:
     explicit connection(
             boost::asio::io_service& ios,
             const boost::asio::ip::tcp::endpoint& endpoint, F&& f)
-        : base_t{ios.get_executor()},
+        : base_t{ios.get_executor(), endpoint.address().to_string()},
           ws_{ios}
     {
         ws_.next_layer().async_connect(endpoint, std::forward<F>(f));
+    }
+
+    explicit connection(
+            boost::asio::io_service& ios,
+            const boost::asio::ip::tcp::endpoint& endpoint)
+        : base_t{ios.get_executor(), endpoint.address().to_string()},
+          ws_{ios}
+    {
+        boost::beast::error_code ec;
+        ws_.next_layer().connect(endpoint, ec);
+
+        if(ec)
+            http::base::fail(ec, "connect");
     }
 
     auto & stream(){
@@ -311,15 +317,26 @@ auto accept_ex(const base::connection::ptr & connection_p,
 }
 
 auto handshake(const base::connection::ptr & connection_p,
-               boost::beast::string_view host, boost::beast::string_view target){
-    return connection_p->handshake(host, target);
+               boost::beast::string_view target){
+    return connection_p->handshake(target);
+}
+
+auto handshake(const base::connection::ptr & connection_p, boost::beast::websocket::response_type& res,
+               boost::beast::string_view target){
+    return connection_p->handshake(res, target);
 }
 
 template<class RequestDecorator>
 auto handshake_ex(const base::connection::ptr & connection_p,
-                  boost::beast::string_view host,
                   boost::beast::string_view target, const RequestDecorator & decorator){
-    return connection_p->handshake(host, target, decorator);
+    return connection_p->handshake(target, decorator);
+}
+
+template<class RequestDecorator>
+auto handshake_ex(const base::connection::ptr & connection_p,
+                  boost::beast::websocket::response_type& res,
+                  boost::beast::string_view target, const RequestDecorator & decorator){
+    return connection_p->handshake(res, target, decorator);
 }
 
 template<class StreamBuffer>
