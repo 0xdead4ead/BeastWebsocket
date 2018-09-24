@@ -20,7 +20,7 @@ int main()
         session.do_handshake("/echo");
     };
 
-    echo.on_handshake = [](auto &, auto &, auto & output, auto &){
+    echo.on_handshake = [](auto &, auto & output, auto &){
         cout << "Send: ";
         boost::beast::ostream(output) << read_string(cin, '\n');
     };
