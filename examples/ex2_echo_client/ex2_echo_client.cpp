@@ -20,15 +20,15 @@ int main()
         session.do_handshake("/echo");
     };
 
-    echo.on_handshake = [](auto &, auto & output, auto &){
-        cout << "Send message: ";
+    echo.on_handshake = [](auto &, auto &, auto & output, auto &){
+        cout << "Send: ";
         boost::beast::ostream(output) << read_string(cin, '\n');
     };
 
     echo.on_message = [](auto &, auto & input, auto & output, auto &){
-        cout << "Recv message: " << boost::beast::buffers(input.data()) << endl;
+        cout << "Recv: " << boost::beast::buffers(input.data()) << endl;
 
-        cout << "Send message: ";
+        cout << "Send: ";
         boost::beast::ostream(output) << read_string(cin, '\n');
     };
 
