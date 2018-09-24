@@ -41,12 +41,31 @@ public:
                                            std::forward<F>(f));
     }
 
+    template<class F>
+    void async_handshake(boost::beast::websocket::response_type& res,
+                         boost::beast::string_view host,
+                         boost::beast::string_view target,
+                         F&& f){
+        derived().stream().async_handshake(res, host, target,
+                                           std::forward<F>(f));
+    }
+
     template<class F, class D>
     void async_handshake_ex(boost::beast::string_view host,
                             boost::beast::string_view target,
                             const D& d,
                             F&& f){
         derived().stream().async_handshake_ex(host, target,
+                                              d, std::forward<F>(f));
+    }
+
+    template<class F, class D>
+    void async_handshake_ex(boost::beast::websocket::response_type& res,
+                            boost::beast::string_view host,
+                            boost::beast::string_view target,
+                            const D& d,
+                            F&& f){
+        derived().stream().async_handshake_ex(res, host, target,
                                               d, std::forward<F>(f));
     }
 
