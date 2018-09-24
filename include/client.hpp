@@ -23,7 +23,7 @@ class client_impl{
                 return;
             }
 
-            session<false, ResBody>::on_connect(host, connection_p_, decorator_, on_connect, on_handshake, on_message, on_ping, on_pong, on_close);
+            session<false, ResBody>::on_connect(connection_p_, decorator_, on_connect, on_handshake, on_message, on_ping, on_pong, on_close);
         });
 
         if(!connection_p_)
@@ -38,7 +38,7 @@ class client_impl{
 public:
 
     std::function<void(session<false, ResBody>&)> on_connect;
-    std::function<void(session<false, ResBody>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> on_handshake;
+    std::function<void(session<false, ResBody>&, const boost::beast::websocket::response_type&, boost::beast::multi_buffer&, bool&)> on_handshake;
     std::function<void(session<false, ResBody>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> on_message;
     std::function<void(session<false, ResBody>&, const boost::beast::string_view&)> on_ping;
     std::function<void(session<false, ResBody>&, const boost::beast::string_view&)> on_pong;

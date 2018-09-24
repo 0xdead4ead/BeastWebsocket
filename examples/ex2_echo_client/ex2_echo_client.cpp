@@ -14,18 +14,20 @@ auto read_string(basic_istream<_CharT, _Traits>& is, _CharT delim){
 
 int main()
 {
+
     ws::client echo;
 
     echo.on_connect = [](auto & session){
         session.do_handshake("/echo");
     };
 
-    echo.on_handshake = [](auto &, auto & output, auto &){
+    echo.on_handshake = [](auto & /*session*/, auto & res, auto & output, auto & /*next_read*/){
+        cout << res << endl;
         cout << "Send: ";
         boost::beast::ostream(output) << read_string(cin, '\n');
     };
 
-    echo.on_message = [](auto &, auto & input, auto & output, auto &){
+    echo.on_message = [](auto & /*session*/, auto & input, auto & output, auto & /*next_read*/){
         cout << "Recv: " << boost::beast::buffers(input.data()) << endl;
 
         cout << "Send: ";
