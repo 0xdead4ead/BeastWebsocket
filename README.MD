@@ -6,14 +6,13 @@ Easy WebSocket server and client library implemented using C++14 and Boost.Beast
 
 * Header-only
 * Supported text/binary data frames, control ping-pong, close frames.
-* Asynchronous/ request, response handling
+* Asynchronous/Synchronous request, response handling
 * Thread pool support
 * Timer manage (default timeout: 10 seconds, default action: Closing connection)
 * Platform independent
 
 # AT SOON...
 
-* Synchronous handling
 * TLS/SSL
 
 # USAGE
@@ -33,11 +32,11 @@ Define handlers to accept connection and received message:
 
 ```cpp
 
-    echo.on_accept = [](auto & session, auto & output){
+    echo.on_accept = [](auto & /*session*/, auto & /*output*/){
         // if it this pull server, an output buffer must be blank
     };
 
-    echo.on_message = [](auto &, auto & input, auto & output){
+    echo.on_message = [](auto & /*session*/, auto & input, auto & output){
         cout << boost::beast::buffers(input.data()) << endl;
         boost::beast::ostream(output) << boost::beast::buffers(input.data()); // echo
     };
@@ -87,12 +86,13 @@ Define handlers, connect to remote host:
         session.do_handshake("/echo");
     };
 
-    echo.on_handshake = [](auto &, auto & output, auto &){
+    echo.on_handshake = [](auto & /*session*/, auto & res, auto & output, auto & /*next_read*/){
+        cout << res << endl;
         cout << "Send: ";
         boost::beast::ostream(output) << read_string(cin, '\n');
     };
 
-    echo.on_message = [](auto &, auto & input, auto & output, auto &){
+    echo.on_message = [](auto & /*session*/, auto & input, auto & output, auto & /*next_read*/){
         cout << "Recv: " << boost::beast::buffers(input.data()) << endl;
 
         cout << "Send: ";
