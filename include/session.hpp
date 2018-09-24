@@ -380,7 +380,7 @@ class session<false, Body> : private boost::noncopyable,
 
     // user handler events
     const std::function<void(session<false, Body>&)> & on_connect_cb_;
-    const std::function<void(session<false, Body>&, boost::beast::multi_buffer&, bool&)> & on_handshake_cb_;
+    const std::function<void(session<false, Body>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> & on_handshake_cb_;
     const std::function<void(session<false, Body>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> & on_message_cb_;
     const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_ping_cb_;
     const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_pong_cb_;
@@ -394,7 +394,7 @@ public:
                      base::connection::ptr & connection_p,
                      const std::function<void(boost::beast::websocket::request_type&)> & decorator_cb,
                      const std::function<void(session<false, Body>&)> & on_connect_cb,
-                     const std::function<void(session<false, Body>&, boost::beast::multi_buffer&, bool&)> & on_handshake_cb,
+                     const std::function<void(session<false, Body>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> & on_handshake_cb,
                      const std::function<void(session<false, Body>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> & on_message_cb,
                      const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_ping_cb,
                      const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_pong_cb,
@@ -414,7 +414,7 @@ public:
                            base::connection::ptr & connection_p,
                            const std::function<void(boost::beast::websocket::request_type&)> & decorator_cb,
                            const std::function<void(session<false, Body>&)> & on_connect_cb,
-                           const std::function<void(session<false, Body>&, boost::beast::multi_buffer&, bool&)> & on_handshake_cb,
+                           const std::function<void(session<false, Body>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> & on_handshake_cb,
                            const std::function<void(session<false, Body>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> & on_message_cb,
                            const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_ping_cb,
                            const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_pong_cb,
@@ -544,7 +544,10 @@ protected:
         bool next_read = true;
 
         if(on_handshake_cb_)
-            on_handshake_cb_(*this, output_buffer_, next_read);
+            on_handshake_cb_(*this, input_buffer_, output_buffer_, next_read);
+
+        if(input_buffer_.size() > 0)
+            input_buffer_.consume(input_buffer_.size());
 
         if(output_buffer_.size() > 0)
             do_write(next_read);

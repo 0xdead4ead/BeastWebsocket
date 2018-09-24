@@ -38,7 +38,7 @@ class client_impl{
 public:
 
     std::function<void(session<false, ResBody>&)> on_connect;
-    std::function<void(session<false, ResBody>&, boost::beast::multi_buffer&, bool&)> on_handshake;
+    std::function<void(session<false, ResBody>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> on_handshake;
     std::function<void(session<false, ResBody>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> on_message;
     std::function<void(session<false, ResBody>&, const boost::beast::string_view&)> on_ping;
     std::function<void(session<false, ResBody>&, const boost::beast::string_view&)> on_pong;
