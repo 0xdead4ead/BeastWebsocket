@@ -157,6 +157,19 @@ public:
         return ec;
     }
 
+    auto handshake(boost::beast::websocket::response_type& res,
+                   boost::beast::string_view host,
+                   boost::beast::string_view target){
+        boost::beast::error_code ec;
+
+        derived().stream().handshake(res, host, target, ec);
+
+        if(ec)
+            http::base::fail(ec, "handshake");
+
+        return ec;
+    }
+
     template<class D>
     auto handshake_ex(boost::beast::string_view host,
                       boost::beast::string_view target,
@@ -164,6 +177,21 @@ public:
         boost::beast::error_code ec;
 
         derived().stream().handshake_ex(host, target, d, ec);
+
+        if(ec)
+            http::base::fail(ec, "handshake");
+
+        return ec;
+    }
+
+    template<class D>
+    auto handshake_ex(boost::beast::websocket::response_type& res,
+                      boost::beast::string_view host,
+                      boost::beast::string_view target,
+                      const D& d){
+        boost::beast::error_code ec;
+
+        derived().stream().handshake_ex(res, host, target, d, ec);
 
         if(ec)
             http::base::fail(ec, "handshake");
