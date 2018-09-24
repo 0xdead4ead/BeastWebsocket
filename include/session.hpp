@@ -324,7 +324,6 @@ protected:
         if(on_message_cb_)
             on_message_cb_(*this, input_buffer_, output_buffer_);
 
-        // Clear the buffer
         input_buffer_.consume(input_buffer_.size());
 
         if(auto_frame)
@@ -351,7 +350,6 @@ protected:
         if(ec)
             return http::base::fail(ec, "write");
 
-        // Clear the buffer
         output_buffer_.consume(output_buffer_.size());
 
         // Do another read
@@ -380,7 +378,7 @@ class session<false, Body> : private boost::noncopyable,
 
     // user handler events
     const std::function<void(session<false, Body>&)> & on_connect_cb_;
-    const std::function<void(session<false, Body>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> & on_handshake_cb_;
+    const std::function<void(session<false, Body>&, const boost::beast::websocket::response_type&, boost::beast::multi_buffer&, bool&)> & on_handshake_cb_;
     const std::function<void(session<false, Body>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> & on_message_cb_;
     const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_ping_cb_;
     const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_pong_cb_;
@@ -390,17 +388,15 @@ class session<false, Body> : private boost::noncopyable,
 
 public:
 
-    explicit session(std::string const & host,
-                     base::connection::ptr & connection_p,
+    explicit session(base::connection::ptr & connection_p,
                      const std::function<void(boost::beast::websocket::request_type&)> & decorator_cb,
                      const std::function<void(session<false, Body>&)> & on_connect_cb,
-                     const std::function<void(session<false, Body>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> & on_handshake_cb,
+                     const std::function<void(session<false, Body>&, const boost::beast::websocket::response_type&, boost::beast::multi_buffer&, bool&)> & on_handshake_cb,
                      const std::function<void(session<false, Body>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> & on_message_cb,
                      const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_ping_cb,
                      const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_pong_cb,
                      const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_close_cb)
-        : host_{host},
-          connection_p_{connection_p},
+        : connection_p_{connection_p},
           decorator_cb_{decorator_cb},
           on_connect_cb_{on_connect_cb},
           on_handshake_cb_{on_handshake_cb},
@@ -410,18 +406,17 @@ public:
           on_close_cb_{on_close_cb}
     {}
 
-    static void on_connect(std::string const & host,
-                           base::connection::ptr & connection_p,
+    static void on_connect(base::connection::ptr & connection_p,
                            const std::function<void(boost::beast::websocket::request_type&)> & decorator_cb,
                            const std::function<void(session<false, Body>&)> & on_connect_cb,
-                           const std::function<void(session<false, Body>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> & on_handshake_cb,
+                           const std::function<void(session<false, Body>&, const boost::beast::websocket::response_type&, boost::beast::multi_buffer&, bool&)> & on_handshake_cb,
                            const std::function<void(session<false, Body>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> & on_message_cb,
                            const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_ping_cb,
                            const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_pong_cb,
                            const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_close_cb)
     {
         auto new_session_p = std::make_shared<session<false, Body>>
-                (host, connection_p, decorator_cb, on_connect_cb, on_handshake_cb, on_message_cb, on_ping_cb, on_pong_cb, on_close_cb);
+                (connection_p, decorator_cb, on_connect_cb, on_handshake_cb, on_message_cb, on_ping_cb, on_pong_cb, on_close_cb);
         if(on_connect_cb)
             on_connect_cb(*new_session_p);
     }
@@ -440,14 +435,14 @@ public:
 
         // Perform the websocket handshake
         if(decorator_cb_)
-            connection_p_->async_handshake_ex(host_, target,
+            connection_p_->async_handshake_ex(res_upgrade, target,
                                               decorator_cb_,
                                               std::bind(
                                                   &session<false, Body>::on_handshake,
                                                   this->shared_from_this(),
                                                   std::placeholders::_1));
         else
-            connection_p_->async_handshake(host_, target,
+            connection_p_->async_handshake(res_upgrade, target,
                                            std::bind(
                                                &session<false, Body>::on_handshake,
                                                this->shared_from_this(),
@@ -513,6 +508,16 @@ public:
                                        std::placeholders::_1));
     }
 
+    void do_write(bool next_read){
+        connection_p_->async_write(output_buffer_,
+                                   std::bind(
+                                       &session<false, Body>::on_write,
+                                       this->shared_from_this(),
+                                       std::placeholders::_1,
+                                       std::placeholders::_2,
+                                       next_read));
+    }
+
 protected:
 
     void do_read(){
@@ -522,16 +527,6 @@ protected:
                                       this->shared_from_this(),
                                       std::placeholders::_1,
                                       std::placeholders::_2));
-    }
-
-    void do_write(bool next_read){
-        connection_p_->async_write(output_buffer_,
-                                   std::bind(
-                                       &session<false, Body>::on_write,
-                                       this->shared_from_this(),
-                                       std::placeholders::_1,
-                                       std::placeholders::_2,
-                                       next_read));
     }
 
     void on_handshake(const boost::system::error_code & ec)
@@ -544,10 +539,9 @@ protected:
         bool next_read = true;
 
         if(on_handshake_cb_)
-            on_handshake_cb_(*this, input_buffer_, output_buffer_, next_read);
+            on_handshake_cb_(*this, res_upgrade, output_buffer_, next_read);
 
-        if(input_buffer_.size() > 0)
-            input_buffer_.consume(input_buffer_.size());
+        res_upgrade = {};
 
         if(output_buffer_.size() > 0)
             do_write(next_read);
@@ -603,7 +597,6 @@ protected:
         if(ec)
             return http::base::fail(ec, "write");
 
-        // Clear the buffer
         output_buffer_.consume(output_buffer_.size());
 
         // Read a message into our buffer
@@ -625,7 +618,6 @@ protected:
         if(on_message_cb_)
             on_message_cb_(*this, input_buffer_, output_buffer_, next_read);
 
-        // Clear the buffer
         input_buffer_.consume(input_buffer_.size());
 
         if(auto_frame)
@@ -636,8 +628,8 @@ protected:
             do_write(next_read);
     }
 
-    std::string host_;
     base::connection::ptr & connection_p_;
+    boost::beast::websocket::response_type res_upgrade; // upgrade message
 
     // io buffers
     boost::beast::multi_buffer input_buffer_;
