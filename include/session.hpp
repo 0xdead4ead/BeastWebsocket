@@ -20,6 +20,8 @@ class session  : private boost::noncopyable,
     bool accepted = false;
     // Auto-detection of incoming frame type
     bool auto_frame = true;
+    // Repeated asynchronous reading is impossible!
+    bool readable = true;
 
     std::function<void(session<true, Body>&)> on_timer_cb;
 
@@ -200,6 +202,8 @@ protected:
     void do_read(){
         timer_p_->stream().expires_after(std::chrono::seconds(10));
 
+        readable = false;
+
         connection_p_->async_read(
                     input_buffer_,
                         std::bind(
@@ -225,7 +229,7 @@ protected:
 
         if(output_buffer_.size() > 0)
             do_write();
-        else
+        else if(readable)
             do_read();
 
     }
@@ -250,7 +254,6 @@ protected:
         if(ec)
             return http::base::fail(ec, "ping");
 
-        do_read();
     }
 
     // Called after a pong is sent.
@@ -263,7 +266,6 @@ protected:
         if(ec)
             return http::base::fail(ec, "pong");
 
-        do_read();
     }
 
     // Called after a close is sent.
@@ -321,6 +323,8 @@ protected:
         if(ec)
             http::base::fail(ec, "read");
 
+        readable = true;
+
         if(on_message_cb_)
             on_message_cb_(*this, input_buffer_, output_buffer_);
 
@@ -332,7 +336,7 @@ protected:
 
         if(output_buffer_.size() > 0)
             do_write();
-        else
+        else if(readable)
             do_read();
 
     }
@@ -353,7 +357,8 @@ protected:
         output_buffer_.consume(output_buffer_.size());
 
         // Do another read
-        do_read();
+        if(readable)
+            do_read();
     }
 
     http::base::timer::ptr timer_p_;
@@ -371,8 +376,12 @@ template<class Body>
 class session<false, Body> : private boost::noncopyable,
         public std::enable_shared_from_this<session<false, Body> >{
 
+    // Handshake successful
+    bool handshaked = false;
     // Auto-detection of incoming frame type
     bool auto_frame = true;
+    // Repeated asynchronous reading is impossible!
+    bool readable = true;
 
     const std::function<void(boost::beast::websocket::request_type&)> & decorator_cb_;
 
@@ -383,8 +392,6 @@ class session<false, Body> : private boost::noncopyable,
     const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_ping_cb_;
     const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_pong_cb_;
     const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_close_cb_;
-
-    bool handshaked = false;
 
 public:
 
@@ -508,7 +515,25 @@ public:
                                        std::placeholders::_1));
     }
 
+    void do_read(){
+
+        readable = false;
+
+        connection_p_->async_read(input_buffer_,
+                                  std::bind(
+                                      &session<false, Body>::on_read,
+                                      this->shared_from_this(),
+                                      std::placeholders::_1,
+                                      std::placeholders::_2));
+    }
+
+protected:
+
     void do_write(bool next_read){
+
+        if(!handshaked)
+            return;
+
         connection_p_->async_write(output_buffer_,
                                    std::bind(
                                        &session<false, Body>::on_write,
@@ -516,17 +541,6 @@ public:
                                        std::placeholders::_1,
                                        std::placeholders::_2,
                                        next_read));
-    }
-
-protected:
-
-    void do_read(){
-        connection_p_->async_read(input_buffer_,
-                                  std::bind(
-                                      &session<false, Body>::on_read,
-                                      this->shared_from_this(),
-                                      std::placeholders::_1,
-                                      std::placeholders::_2));
     }
 
     void on_handshake(const boost::system::error_code & ec)
@@ -567,7 +581,6 @@ protected:
         if(ec)
             return http::base::fail(ec, "ping");
 
-        do_read();
     }
 
     // Called after a pong is sent.
@@ -580,7 +593,6 @@ protected:
         if(ec)
             return http::base::fail(ec, "pong");
 
-        do_read();
     }
 
     void on_close(const boost::system::error_code & ec)
@@ -600,7 +612,7 @@ protected:
         output_buffer_.consume(output_buffer_.size());
 
         // Read a message into our buffer
-        if(next_read)
+        if(next_read && readable)
             do_read();
 
     }
@@ -612,6 +624,8 @@ protected:
 
         if(ec)
             return http::base::fail(ec, "read");
+
+        readable = true;
 
         bool next_read = true;
 
