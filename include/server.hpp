@@ -14,11 +14,11 @@ class server_impl{
 
 public:
 
-    std::function<void(session<true, ReqBody>&, boost::beast::multi_buffer&)> on_accept;
-    std::function<void(session<true, ReqBody>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&)> on_message;
-    std::function<void(session<true, ReqBody>&, const boost::beast::string_view&)> on_ping;
-    std::function<void(session<true, ReqBody>&, const boost::beast::string_view&)> on_pong;
-    std::function<void(session<true, ReqBody>&, const boost::beast::string_view&)> on_close;
+    std::function<void(session<true>&, boost::beast::multi_buffer&)> on_accept;
+    std::function<void(session<true>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&)> on_message;
+    std::function<void(session<true>&, const boost::beast::string_view&)> on_ping;
+    std::function<void(session<true>&, const boost::beast::string_view&)> on_pong;
+    std::function<void(session<true>&, const boost::beast::string_view&)> on_close;
 
     explicit server_impl()
     {}
@@ -30,7 +30,7 @@ public:
 
     template<class ConnectionPtr, class Callback>
     void upgrade_session(const ConnectionPtr& connection, Callback && on_done){
-        session<true, ReqBody>::template make<Callback>(connection->release_stream(),
+        session<true>::template make<Callback>(connection->release_stream(),
                                                         decorator_,
                                                         on_accept,
                                                         on_message,

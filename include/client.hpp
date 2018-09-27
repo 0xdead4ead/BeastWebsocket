@@ -8,7 +8,7 @@ namespace ws{
 
 /// \brief Class for communication with a remote host
 /// \tparam Body type for response message
-template<class ResBody>
+//template<class ResBody>
 class client_impl{
 
     template<class Callback0>
@@ -23,7 +23,7 @@ class client_impl{
                 return;
             }
 
-            session<false, ResBody>::on_connect(connection_p_, decorator_, on_connect, on_handshake, on_message, on_ping, on_pong, on_close);
+            session<false>::on_connect(connection_p_, decorator_, on_connect, on_handshake, on_message, on_ping, on_pong, on_close);
         });
 
         if(!connection_p_)
@@ -37,12 +37,12 @@ class client_impl{
 
 public:
 
-    std::function<void(session<false, ResBody>&)> on_connect;
-    std::function<void(session<false, ResBody>&, const boost::beast::websocket::response_type&, boost::beast::multi_buffer&, bool&)> on_handshake;
-    std::function<void(session<false, ResBody>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> on_message;
-    std::function<void(session<false, ResBody>&, const boost::beast::string_view&)> on_ping;
-    std::function<void(session<false, ResBody>&, const boost::beast::string_view&)> on_pong;
-    std::function<void(session<false, ResBody>&, const boost::beast::string_view&)> on_close;
+    std::function<void(session<false>&)> on_connect;
+    std::function<void(session<false>&, const boost::beast::websocket::response_type&, boost::beast::multi_buffer&, bool&)> on_handshake;
+    std::function<void(session<false>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> on_message;
+    std::function<void(session<false>&, const boost::beast::string_view&)> on_ping;
+    std::function<void(session<false>&, const boost::beast::string_view&)> on_pong;
+    std::function<void(session<false>&, const boost::beast::string_view&)> on_close;
 
     explicit client_impl()
         : connection_p_{nullptr}
@@ -61,7 +61,7 @@ public:
 
 }; // client_impl class
 
-using client = client_impl<boost::beast::http::string_body>;
+using client = client_impl;//<boost::beast::http::string_body>;
 
 } // namespace ws
 

@@ -11,9 +11,9 @@ using message_t = boost::beast::string_view;
 
 /// \brief session class. Handles an WS server connection
 /// \tparam Type of body request message
-template<bool isServer, class Body>
+template<bool isServer>
 class session  : private boost::noncopyable,
-        public std::enable_shared_from_this<session<true, Body> >
+        public std::enable_shared_from_this<session<true> >
 {
 
     // Set up after accept handshake
@@ -23,26 +23,26 @@ class session  : private boost::noncopyable,
     // Repeated asynchronous reading is impossible!
     bool readable = true;
 
-    std::function<void(session<true, Body>&)> on_timer_cb;
+    std::function<void(session<true>&)> on_timer_cb;
 
     const std::function<void(boost::beast::websocket::response_type&)> & decorator_cb_;
 
     // user handler events
-    const std::function<void(session<true, Body>&, boost::beast::multi_buffer&)> & on_accept_cb_;
-    const std::function<void(session<true, Body>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&)> & on_message_cb_;
-    const std::function<void(session<true, Body>&, const boost::beast::string_view&)> & on_ping_cb_;
-    const std::function<void(session<true, Body>&, const boost::beast::string_view&)> & on_pong_cb_;
-    const std::function<void(session<true, Body>&, const boost::beast::string_view&)> & on_close_cb_;
+    const std::function<void(session<true>&, boost::beast::multi_buffer&)> & on_accept_cb_;
+    const std::function<void(session<true>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&)> & on_message_cb_;
+    const std::function<void(session<true>&, const boost::beast::string_view&)> & on_ping_cb_;
+    const std::function<void(session<true>&, const boost::beast::string_view&)> & on_pong_cb_;
+    const std::function<void(session<true>&, const boost::beast::string_view&)> & on_close_cb_;
 
 public:
 
     explicit session(boost::asio::ip::tcp::socket&& socket,
                      const std::function<void(boost::beast::websocket::response_type&)> & decorator_cb,
-                     const std::function<void(session<true, Body>&, boost::beast::multi_buffer&)> & on_accept_cb,
-                     const std::function<void(session<true, Body>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&)> & on_message_cb,
-                     const std::function<void(session<true, Body>&, const boost::beast::string_view&)> & on_ping_cb,
-                     const std::function<void(session<true, Body>&, const boost::beast::string_view&)> & on_pong_cb,
-                     const std::function<void(session<true, Body>&, const boost::beast::string_view&)> & on_close_cb)
+                     const std::function<void(session<true>&, boost::beast::multi_buffer&)> & on_accept_cb,
+                     const std::function<void(session<true>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&)> & on_message_cb,
+                     const std::function<void(session<true>&, const boost::beast::string_view&)> & on_ping_cb,
+                     const std::function<void(session<true>&, const boost::beast::string_view&)> & on_pong_cb,
+                     const std::function<void(session<true>&, const boost::beast::string_view&)> & on_close_cb)
         : timer_p_{std::make_shared<http::base::timer>(socket.get_executor(),
                                                        (std::chrono::steady_clock::time_point::max)())},
           decorator_cb_{decorator_cb},
@@ -57,14 +57,14 @@ public:
     template<class Callback>
     static void make(boost::asio::ip::tcp::socket&& socket,
                      const std::function<void(boost::beast::websocket::response_type&)> & decorator_cb,
-                     const std::function<void(session<true, Body>&, boost::beast::multi_buffer&)> & on_accept_cb,
-                     const std::function<void(session<true, Body>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&)> & on_message_cb,
-                     const std::function<void(session<true, Body>&, const boost::beast::string_view&)> & on_ping_cb,
-                     const std::function<void(session<true, Body>&, const boost::beast::string_view&)> & on_pong_cb,
-                     const std::function<void(session<true, Body>&, const boost::beast::string_view&)> & on_close_cb,
+                     const std::function<void(session<true>&, boost::beast::multi_buffer&)> & on_accept_cb,
+                     const std::function<void(session<true>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&)> & on_message_cb,
+                     const std::function<void(session<true>&, const boost::beast::string_view&)> & on_ping_cb,
+                     const std::function<void(session<true>&, const boost::beast::string_view&)> & on_pong_cb,
+                     const std::function<void(session<true>&, const boost::beast::string_view&)> & on_close_cb,
                      Callback&& on_done)
     {
-        auto new_session_p = std::make_shared<session<true, Body> >
+        auto new_session_p = std::make_shared<session<true> >
                 (std::move(socket), decorator_cb, on_accept_cb, on_message_cb, on_ping_cb, on_pong_cb, on_close_cb);
         on_done(*new_session_p);
     }
@@ -78,7 +78,7 @@ public:
 
         connection_p_->control_callback(
                     std::bind(
-                        &session<true, Body>::on_control_callback,
+                        &session<true>::on_control_callback,
                         this,
                         std::placeholders::_1,
                         std::placeholders::_2));
@@ -89,13 +89,13 @@ public:
         if(decorator_cb_){
             connection_p_->async_accept_ex(msg, decorator_cb_,
                                            std::bind(
-                                               &session<true, Body>::on_accept,
+                                               &session<true>::on_accept,
                                                this->shared_from_this(),
                                                std::placeholders::_1));
         }else{
             connection_p_->async_accept(msg,
                                         std::bind(
-                                            &session<true, Body>::on_accept,
+                                            &session<true>::on_accept,
                                             this->shared_from_this(),
                                             std::placeholders::_1));
         }
@@ -133,7 +133,7 @@ public:
 
         connection_p_->async_ping(payload,
                                   std::bind(
-                                      &session<true, Body>::on_ping,
+                                      &session<true>::on_ping,
                                       this->shared_from_this(),
                                       std::placeholders::_1));
     }
@@ -147,7 +147,7 @@ public:
 
         connection_p_->async_pong(payload,
                                   std::bind(
-                                      &session<true, Body>::on_pong,
+                                      &session<true>::on_pong,
                                       this->shared_from_this(),
                                       std::placeholders::_1));
     }
@@ -161,7 +161,7 @@ public:
 
         connection_p_->async_close(reason,
                                    std::bind(
-                                       &session<true, Body>::on_close,
+                                       &session<true>::on_close,
                                        this->shared_from_this(),
                                        std::placeholders::_1));
     }
@@ -170,7 +170,7 @@ public:
     {
         timer_p_->async_wait(
                     std::bind(
-                        &session<true, Body>::on_timer,
+                        &session<true>::on_timer,
                         this->shared_from_this(),
                         std::placeholders::_1));
     }
@@ -182,24 +182,16 @@ public:
 
         timer_p_->async_wait(
                     std::bind(
-                        &session<true, Body>::on_timer,
+                        &session<true>::on_timer,
                         this->shared_from_this(),
                         std::placeholders::_1));
     }
 
-    void do_write(){
-        connection_p_->async_write(
-            output_buffer_,
-                std::bind(
-                    &session<true, Body>::on_write,
-                    this->shared_from_this(),
-                    std::placeholders::_1,
-                    std::placeholders::_2));
-    }
-
-protected:
-
     void do_read(){
+
+        if(!accepted)
+            return;
+
         timer_p_->stream().expires_after(std::chrono::seconds(10));
 
         readable = false;
@@ -207,11 +199,27 @@ protected:
         connection_p_->async_read(
                     input_buffer_,
                         std::bind(
-                            &session<true, Body>::on_read,
+                            &session<true>::on_read,
                             this->shared_from_this(),
                             std::placeholders::_1,
                             std::placeholders::_2));
     }
+
+    void do_write(){
+
+        if(!accepted)
+            return;
+
+        connection_p_->async_write(
+            output_buffer_,
+                std::bind(
+                    &session<true>::on_write,
+                    this->shared_from_this(),
+                    std::placeholders::_1,
+                    std::placeholders::_2));
+    }
+
+protected:
 
     void on_accept(const boost::system::error_code & ec)
     {
@@ -300,7 +308,7 @@ protected:
 
             connection_p_->async_close(boost::beast::websocket::close_code::normal,
                                        std::bind(
-                                           &session<true, Body>::on_close,
+                                           &session<true>::on_close,
                                            this->shared_from_this(),
                                            std::placeholders::_1));
         }
@@ -371,10 +379,9 @@ protected:
 }; // class session
 
 /// \brief session class. Handles an WS client connection
-/// \tparam Type of body response message
-template<class Body>
-class session<false, Body> : private boost::noncopyable,
-        public std::enable_shared_from_this<session<false, Body> >{
+template<>
+class session<false> : private boost::noncopyable,
+        public std::enable_shared_from_this<session<false> >{
 
     // Handshake successful
     bool handshaked = false;
@@ -386,44 +393,41 @@ class session<false, Body> : private boost::noncopyable,
     const std::function<void(boost::beast::websocket::request_type&)> & decorator_cb_;
 
     // user handler events
-    const std::function<void(session<false, Body>&)> & on_connect_cb_;
-    const std::function<void(session<false, Body>&, const boost::beast::websocket::response_type&, boost::beast::multi_buffer&, bool&)> & on_handshake_cb_;
-    const std::function<void(session<false, Body>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> & on_message_cb_;
-    const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_ping_cb_;
-    const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_pong_cb_;
-    const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_close_cb_;
+    const std::function<void(session<false>&, const boost::beast::websocket::response_type&, boost::beast::multi_buffer&, bool&)> & on_handshake_cb_;
+    const std::function<void(session<false>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> & on_message_cb_;
+    const std::function<void(session<false>&, const boost::beast::string_view&)> & on_ping_cb_;
+    const std::function<void(session<false>&, const boost::beast::string_view&)> & on_pong_cb_;
+    const std::function<void(session<false>&, const boost::beast::string_view&)> & on_close_cb_;
 
 public:
 
     explicit session(base::connection::ptr & connection_p,
                      const std::function<void(boost::beast::websocket::request_type&)> & decorator_cb,
-                     const std::function<void(session<false, Body>&)> & on_connect_cb,
-                     const std::function<void(session<false, Body>&, const boost::beast::websocket::response_type&, boost::beast::multi_buffer&, bool&)> & on_handshake_cb,
-                     const std::function<void(session<false, Body>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> & on_message_cb,
-                     const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_ping_cb,
-                     const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_pong_cb,
-                     const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_close_cb)
-        : connection_p_{connection_p},
-          decorator_cb_{decorator_cb},
-          on_connect_cb_{on_connect_cb},
+                     const std::function<void(session<false>&, const boost::beast::websocket::response_type&, boost::beast::multi_buffer&, bool&)> & on_handshake_cb,
+                     const std::function<void(session<false>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> & on_message_cb,
+                     const std::function<void(session<false>&, const boost::beast::string_view&)> & on_ping_cb,
+                     const std::function<void(session<false>&, const boost::beast::string_view&)> & on_pong_cb,
+                     const std::function<void(session<false>&, const boost::beast::string_view&)> & on_close_cb)
+        : decorator_cb_{decorator_cb},
           on_handshake_cb_{on_handshake_cb},
           on_message_cb_{on_message_cb},
           on_ping_cb_{on_ping_cb},
           on_pong_cb_{on_pong_cb},
-          on_close_cb_{on_close_cb}
+          on_close_cb_{on_close_cb},
+          connection_p_{connection_p}
     {}
 
     static void on_connect(base::connection::ptr & connection_p,
                            const std::function<void(boost::beast::websocket::request_type&)> & decorator_cb,
-                           const std::function<void(session<false, Body>&)> & on_connect_cb,
-                           const std::function<void(session<false, Body>&, const boost::beast::websocket::response_type&, boost::beast::multi_buffer&, bool&)> & on_handshake_cb,
-                           const std::function<void(session<false, Body>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> & on_message_cb,
-                           const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_ping_cb,
-                           const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_pong_cb,
-                           const std::function<void(session<false, Body>&, const boost::beast::string_view&)> & on_close_cb)
+                           const std::function<void(session<false>&)> & on_connect_cb,
+                           const std::function<void(session<false>&, const boost::beast::websocket::response_type&, boost::beast::multi_buffer&, bool&)> & on_handshake_cb,
+                           const std::function<void(session<false>&, const boost::beast::multi_buffer&, boost::beast::multi_buffer&, bool&)> & on_message_cb,
+                           const std::function<void(session<false>&, const boost::beast::string_view&)> & on_ping_cb,
+                           const std::function<void(session<false>&, const boost::beast::string_view&)> & on_pong_cb,
+                           const std::function<void(session<false>&, const boost::beast::string_view&)> & on_close_cb)
     {
-        auto new_session_p = std::make_shared<session<false, Body>>
-                (connection_p, decorator_cb, on_connect_cb, on_handshake_cb, on_message_cb, on_ping_cb, on_pong_cb, on_close_cb);
+        auto new_session_p = std::make_shared<session<false>>
+                (connection_p, decorator_cb, on_handshake_cb, on_message_cb, on_ping_cb, on_pong_cb, on_close_cb);
         if(on_connect_cb)
             on_connect_cb(*new_session_p);
     }
@@ -435,7 +439,7 @@ public:
 
         connection_p_->control_callback(
                     std::bind(
-                        &session<false, Body>::on_control_callback,
+                        &session<false>::on_control_callback,
                         this,
                         std::placeholders::_1,
                         std::placeholders::_2));
@@ -445,13 +449,13 @@ public:
             connection_p_->async_handshake_ex(res_upgrade, target,
                                               decorator_cb_,
                                               std::bind(
-                                                  &session<false, Body>::on_handshake,
+                                                  &session<false>::on_handshake,
                                                   this->shared_from_this(),
                                                   std::placeholders::_1));
         else
             connection_p_->async_handshake(res_upgrade, target,
                                            std::bind(
-                                               &session<false, Body>::on_handshake,
+                                               &session<false>::on_handshake,
                                                this->shared_from_this(),
                                                std::placeholders::_1));
     }
@@ -486,7 +490,7 @@ public:
 
         connection_p_->async_ping(payload,
                                   std::bind(
-                                      &session<false, Body>::on_ping,
+                                      &session<false>::on_ping,
                                       this->shared_from_this(),
                                       std::placeholders::_1));
     }
@@ -498,7 +502,7 @@ public:
 
         connection_p_->async_pong(payload,
                                   std::bind(
-                                      &session<false, Body>::on_pong,
+                                      &session<false>::on_pong,
                                       this->shared_from_this(),
                                       std::placeholders::_1));
     }
@@ -510,24 +514,25 @@ public:
 
         connection_p_->async_close(reason,
                                    std::bind(
-                                       &session<false, Body>::on_close,
+                                       &session<false>::on_close,
                                        this->shared_from_this(),
                                        std::placeholders::_1));
     }
 
     void do_read(){
 
+        if(!handshaked)
+            return;
+
         readable = false;
 
         connection_p_->async_read(input_buffer_,
                                   std::bind(
-                                      &session<false, Body>::on_read,
+                                      &session<false>::on_read,
                                       this->shared_from_this(),
                                       std::placeholders::_1,
                                       std::placeholders::_2));
     }
-
-protected:
 
     void do_write(bool next_read){
 
@@ -536,12 +541,14 @@ protected:
 
         connection_p_->async_write(output_buffer_,
                                    std::bind(
-                                       &session<false, Body>::on_write,
+                                       &session<false>::on_write,
                                        this->shared_from_this(),
                                        std::placeholders::_1,
                                        std::placeholders::_2,
                                        next_read));
     }
+
+protected:
 
     void on_handshake(const boost::system::error_code & ec)
     {
