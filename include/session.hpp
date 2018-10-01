@@ -329,7 +329,7 @@ protected:
             return;
 
         if(ec)
-            http::base::fail(ec, "read");
+            return http::base::fail(ec, "read");
 
         readable = true;
 
@@ -534,7 +534,7 @@ public:
                                       std::placeholders::_2));
     }
 
-    void do_write(bool next_read){
+    void do_write(bool next_read = true){
 
         if(!handshaked)
             return;
