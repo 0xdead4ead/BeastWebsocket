@@ -189,7 +189,7 @@ public:
 
     void do_read(){
 
-        if(!accepted)
+        if(!accepted || !readable)
             return;
 
         timer_p_->stream().expires_after(std::chrono::seconds(10));
@@ -521,7 +521,7 @@ public:
 
     void do_read(){
 
-        if(!handshaked)
+        if(!handshaked || !readable)
             return;
 
         readable = false;
