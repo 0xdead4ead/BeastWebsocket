@@ -1,4 +1,4 @@
-[submodule "extern/beast_http_server"]
-	path = extern/beast_http_server
-	url = https://github.com/0xdead4ead/beast_http_server
+[submodule "extern/BeastHttp"]
+	path = extern/BeastHttp
+	url = https://github.com/0xdead4ead/BeastHttp
 	branch = master
