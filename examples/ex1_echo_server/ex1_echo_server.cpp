@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <server.hpp>
-#include <beast_http_server/include/server.hpp>
+#include <BeastHttp/include/server.hpp>
 
 using namespace std;
 

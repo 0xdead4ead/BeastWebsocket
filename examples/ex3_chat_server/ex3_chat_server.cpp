@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <server.hpp>
-#include <beast_http_server/include/server.hpp>
+#include <BeastHttp/include/server.hpp>
 
 //for storing messages and client sessions
 #include <unordered_map>
@@ -30,7 +30,7 @@ auto make_response(const Request & req, const std::string & user_body){
     return res;
 }
 
-using wss = ws::server_impl<boost::beast::http::string_body>;
+using wss = ws::server_impl;
 using client_session_ptr = std::shared_ptr<ws::session<true>>;
 
 // client struct
