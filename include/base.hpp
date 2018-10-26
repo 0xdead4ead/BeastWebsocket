@@ -1,13 +1,13 @@
 #ifndef BEAST_WS_BASE_HPP
 #define BEAST_WS_BASE_HPP
 
-#include <beast_http_server/include/base.hpp>
+#include <BeastHttp/include/base.hpp>
 
 #include <boost/beast/websocket.hpp>
 
 
-#if BEAST_HTTP_SERVER_VERSION < 102
-#error "BEAST_HTTP_SERVER_VERSION must be >= 102"
+#if BEAST_HTTP_VERSION < 104
+#error "BEAST_HTTP_VERSION must be >= 104"
 #endif
 
 namespace ws {
@@ -26,7 +26,7 @@ class connection_base : private boost::noncopyable {
 protected:
 
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
-    /*boost::beast::string_view*/ std::string host_; // for handshake operation
+    std::string host_; // for handshake operation
 
 public:
 
