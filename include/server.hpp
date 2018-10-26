@@ -6,8 +6,6 @@
 namespace ws {
 
 /// \brief ws server class
-/// \tparam Body type for request message
-template<class ReqBody>
 class server_impl{
 
     std::function<void(boost::beast::websocket::response_type&)> decorator_;
@@ -42,7 +40,7 @@ public:
 
 }; // server_impl class
 
-using server = server_impl<boost::beast::http::string_body>;
+using server = server_impl;
 
 } // namespace ws
 

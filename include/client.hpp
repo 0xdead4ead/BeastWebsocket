@@ -7,8 +7,6 @@
 namespace ws{
 
 /// \brief Class for communication with a remote host
-/// \tparam Body type for response message
-//template<class ResBody>
 class client_impl{
 
     template<class Callback0>
@@ -61,7 +59,7 @@ public:
 
 }; // client_impl class
 
-using client = client_impl;//<boost::beast::http::string_body>;
+using client = client_impl;
 
 } // namespace ws
 
