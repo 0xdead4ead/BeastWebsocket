@@ -1,14 +1,13 @@
 cmake_minimum_required(VERSION 3.11)
 
-project(beast_ws_server)
+project(BeastWebsocket)
 
-set(CMAKE_CXX_STANDARD_REQUIRED on)
-
-if(NOT CMAKE_CXX_STANDARD)
-    set(CMAKE_CXX_STANDARD 14)
+if(NOT CMAKE_CXX_FLAGS)
+    set(CMAKE_CXX_FLAGS -std=c++14)
 endif()
 
-message(${CMAKE_CXX_STANDARD})
+message("CXX=" ${CMAKE_CXX_COMPILER})
+message("CXXFLAGS=" ${CMAKE_CXX_FLAGS})
 
 add_subdirectory("${PROJECT_SOURCE_DIR}/examples/ex1_echo_server")
 add_subdirectory("${PROJECT_SOURCE_DIR}/examples/ex2_echo_client")
