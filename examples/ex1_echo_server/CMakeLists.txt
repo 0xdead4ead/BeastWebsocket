@@ -9,12 +9,7 @@ include_directories("${PROJECT_SOURCE_DIR}/include")
 include_directories(${Boost_INCLUDE_DIRS})
 set(SOURCES
     ex1_echo_server.cpp)
-set(HEADERS
-    ${PROJECT_SOURCE_DIR}/include/server.hpp
-    ${PROJECT_SOURCE_DIR}/include/client.hpp
-    ${PROJECT_SOURCE_DIR}/include/base.hpp
-    ${PROJECT_SOURCE_DIR}/include/session.hpp)
 
-add_executable(${OUTPUT_NAME} ${SOURCES} ${HEADERS})
+add_executable(${OUTPUT_NAME} ${SOURCES} ${BEAST_WEBSOCKET_HEADERS})
 
 target_link_libraries(${OUTPUT_NAME} Boost::system Boost::thread Boost::regex pthread icui18n)
