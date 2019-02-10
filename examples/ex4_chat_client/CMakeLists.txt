@@ -12,10 +12,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 set(SOURCES
     ex4_chat_client.cpp)
 set(HEADERS
-    ${PROJECT_SOURCE_DIR}/include/server.hpp
-    ${PROJECT_SOURCE_DIR}/include/client.hpp
-    ${PROJECT_SOURCE_DIR}/include/base.hpp
-    ${PROJECT_SOURCE_DIR}/include/session.hpp
+	${BEAST_WEBSOCKET_HEADERS}
     ${PROJECT_SOURCE_DIR}/examples/chat_message.hpp)
 
 add_executable(${OUTPUT_NAME} ${SOURCES} ${HEADERS})
