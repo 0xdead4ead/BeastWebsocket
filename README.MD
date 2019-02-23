@@ -1,3 +1,5 @@
+# This repository is deprecated! 23.02.2019
+
 # SYNOPSIS
 
 Easy WebSocket server and client library implemented using C++14 and Boost.Beast. To start two-way communication, you need an initial handshake (rfc6455 section 1.3). The project uses [`beast_http_server`](https://github.com/0xdead4ead/beast_http_server) with all its dependencies.
